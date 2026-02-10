@@ -1,90 +1,84 @@
 import streamlit as st
 import requests
 
-# ================= CONFIG =================
-APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo3YsafRiu6C9svDsDGRIykTqFbT2dOl_zkRwcSwSupNsGVikefoaYPV1plt3BGOkq/exec"
-LOGO_FILE = "mhpl_logo.png"
-
+# ===============================
+# CONFIG
+# ===============================
 st.set_page_config(page_title="Medanta Assessment", layout="centered")
 
-# ================= HEADER =================
-try:
-    st.image(LOGO_FILE, width=120)
-except:
-    pass
+APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo3YsafRiu6C9svDsDGRIykTqFbT2dOl_zkRwcSwSupNsGVikefoaYPV1plt3BGOkq/exec"
 
-st.markdown("## **MEDANTA HOSPITAL LUCKNOW**")
+# ===============================
+# READ QUERY PARAM (THIS WAS THE MISSING PART)
+# ===============================
+query_params = st.experimental_get_query_params()
+assessment_id = query_params.get("assessment", [None])[0]
 
-# ================= READ URL PARAM =================
-params = st.query_params
-assessment_id = params.get("assessment", None)
+# ===============================
+# HEADER
+# ===============================
+st.image("https://upload.wikimedia.org/wikipedia/commons/5/5f/Medanta_logo.png", width=120)
+st.markdown("## MEDANTA HOSPITAL LUCKNOW")
 
 if not assessment_id:
     st.warning("No assessment selected.")
     st.stop()
 
-# ================= LOAD QUESTIONS =================
-@st.cache_data(show_spinner=False)
-def load_questions(aid):
-    r = requests.get(APPS_SCRIPT_URL, params={"assessment": aid})
-    r.raise_for_status()
-    return r.json()
-
-try:
-    questions = load_questions(assessment_id)
-except Exception as e:
-    st.error("Unable to load assessment questions.")
-    st.stop()
-
-if not questions:
-    st.warning("No active questions found for this assessment.")
-    st.stop()
-
-# ================= SESSION STATE =================
+# ===============================
+# SESSION STATE
+# ===============================
 if "q_index" not in st.session_state:
     st.session_state.q_index = 0
+if "score" not in st.session_state:
     st.session_state.score = 0
-    st.session_state.answers = {}
+if "questions" not in st.session_state:
+    st.session_state.questions = []
 
-q = questions[st.session_state.q_index]
+# ===============================
+# LOAD QUESTIONS FROM GOOGLE SHEET
+# ===============================
+if not st.session_state.questions:
+    resp = requests.get(APP_SCRIPT_URL, params={"assessment": assessment_id})
+    data = resp.json()
 
-# ================= QUESTION UI =================
-st.markdown(f"### 📝 {q['Assessment_Name']}")
-st.markdown(f"**Question {st.session_state.q_index + 1} of {len(questions)}**")
-st.markdown(q["Question_Text"])
+    if not data or "questions" not in data:
+        st.error("No questions found for this assessment.")
+        st.stop()
 
-options = {
-    "A": q["Option_A"],
-    "B": q["Option_B"],
-    "C": q["Option_C"],
-    "D": q["Option_D"]
-}
+    st.session_state.questions = data["questions"]
+
+questions = st.session_state.questions
+q_index = st.session_state.q_index
+total_q = len(questions)
+
+# ===============================
+# COMPLETION
+# ===============================
+if q_index >= total_q:
+    st.success("Assessment completed")
+    st.info(f"Score: {st.session_state.score}")
+    st.button("Back to Assessment List", on_click=lambda: st.experimental_set_query_params())
+    st.stop()
+
+# ===============================
+# SHOW QUESTION
+# ===============================
+q = questions[q_index]
+
+st.markdown(f"### Question {q_index + 1} of {total_q}")
+st.markdown(q["question"])
 
 choice = st.radio(
-    "Select your answer",
-    options.keys(),
-    format_func=lambda x: f"{x}. {options[x]}",
-    key=f"q_{st.session_state.q_index}"
+    "Select answer",
+    ["A", "B", "C", "D"],
+    format_func=lambda x: q[f"option_{x.lower()}"]
 )
 
-# ================= NAVIGATION =================
-col1, col2 = st.columns(2)
-
-with col2:
-    if st.button("Next"):
-        st.session_state.answers[q["Question_ID"]] = choice
-        if choice == q["Correct_Option"]:
-            st.session_state.score += 1
-
-        if st.session_state.q_index + 1 < len(questions):
-            st.session_state.q_index += 1
-            st.rerun()
-        else:
-            st.session_state.q_index = "done"
-            st.rerun()
-
-# ================= RESULT =================
-if st.session_state.q_index == "done":
-    st.success("Assessment completed")
-    st.info(f"Score: {st.session_state.score} / {len(questions)}")
-    st.stop()
+# ===============================
+# NEXT BUTTON
+# ===============================
+if st.button("Next"):
+    if choice == q["correct"]:
+        st.session_state.score += 1
+    st.session_state.q_index += 1
+    st.experimental_rerun()
