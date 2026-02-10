@@ -1,196 +1,95 @@
 import streamlit as st
 
-# -------------------------------------------------
-# PAGE CONFIG
-# -------------------------------------------------
-st.set_page_config(
-    page_title="Medanta Induction Assessment",
-    layout="centered"
-)
+st.set_page_config(page_title="Medanta Induction Assessment", layout="centered")
 
-# -------------------------------------------------
-# LOGO
-# -------------------------------------------------
+# ---------------- LOGO ----------------
 st.image("mhpl_logo.png", width=180)
-st.markdown(
-    "<h2 style='text-align:center;'>MEDANTA HOSPITAL LUCKNOW</h2>",
-    unsafe_allow_html=True
-)
+st.markdown("<h2 style='text-align:center;'>MEDANTA HOSPITAL LUCKNOW</h2>", unsafe_allow_html=True)
 
-# -------------------------------------------------
-# ASSESSMENT MASTER
-# -------------------------------------------------
+# ---------------- MASTER ----------------
 ASSESSMENTS = {
-    "hr_admin_process": {
-        "label": "📋 HR Admin Process",
-        "questions": []
-    },
-    "second_victim": {
-        "label": "🧠 Second Victim",
-        "questions": []
-    },
-    "medication_safety": {
-        "label": "💊 Medication Safety",
-        "questions": []
-    },
-    "blood_blood_product": {
-        "label": "🩸 Blood & Blood Product",
-        "questions": []
-    },
-    "basic_life_support": {
-        "label": "❤️ Basic Life Support",
-        "questions": []
-    },
-    "fire_safety": {
-        "label": "🔥 Fire Safety",
-        "questions": [
-            {
-                "q": "What is the first step in case of fire?",
-                "options": [
-                    "Run immediately",
-                    "Raise alarm and inform security",
-                    "Ignore small fires",
-                    "Use water on electrical fire"
-                ],
-                "answer": "Raise alarm and inform security"
-            }
-        ]
-    },
-    "infection_prevention": {
-        "label": "🧼 Infection Prevention",
-        "questions": []
-    },
-    "quality_training": {
-        "label": "📊 Quality Training",
-        "questions": []
-    },
-    "ipsg": {
-        "label": "🛡️ IPSG",
-        "questions": []
-    },
-    "radiation_training": {
-        "label": "☢️ Radiation Training",
-        "questions": []
-    },
-    "facility_mgmt_safety": {
-        "label": "🏥 Facility Management Safety",
-        "questions": []
-    },
-    "emergency_codes": {
-        "label": "🚨 Emergency Codes",
-        "questions": []
-    },
-    "cybersecurity_assessment": {
-        "label": "🔐 Cybersecurity",
-        "questions": []
-    },
-    "workplace_violence": {
-        "label": "⚠️ Workplace Violence",
-        "questions": []
-    },
-    "emr_training": {
-        "label": "💻 EMR Training",
-        "questions": []
-    },
-    "his_training": {
-        "label": "🖥️ HIS Training",
-        "questions": []
-    },
-    "medical_documentation": {
-        "label": "📝 Medical Documentation",
-        "questions": []
-    }
+    "hr_admin_process": "📋 HR Admin Process",
+    "second_victim": "🧠 Second Victim",
+    "medication_safety": "💊 Medication Safety",
+    "blood_blood_product": "🩸 Blood & Blood Product",
+    "basic_life_support": "❤️ Basic Life Support",
+    "fire_safety": "🔥 Fire Safety",
+    "infection_prevention": "🧼 Infection Prevention",
+    "quality_training": "📊 Quality Training",
+    "ipsg": "🛡️ IPSG",
+    "radiation_training": "☢️ Radiation Training",
+    "facility_mgmt_safety": "🏥 Facility Management Safety",
+    "emergency_codes": "🚨 Emergency Codes",
+    "cybersecurity_assessment": "🔐 Cybersecurity",
+    "workplace_violence": "⚠️ Workplace Violence",
+    "emr_training": "💻 EMR Training",
+    "his_training": "🖥️ HIS Training",
+    "medical_documentation": "📝 Medical Documentation"
 }
 
-# -------------------------------------------------
-# SESSION STATE INIT
-# -------------------------------------------------
-if "selected_assessment" not in st.session_state:
-    st.session_state.selected_assessment = None
+QUESTIONS = {
+    "fire_safety": [
+        {
+            "q": "What is the first step in case of fire?",
+            "options": [
+                "Run immediately",
+                "Raise alarm and inform security",
+                "Ignore small fires",
+                "Use water on electrical fire"
+            ],
+            "answer": "Raise alarm and inform security"
+        }
+    ]
+}
 
-if "q_index" not in st.session_state:
+# ---------------- STATE ----------------
+if "assessment" not in st.session_state:
+    st.session_state.assessment = None
     st.session_state.q_index = 0
-
-if "score" not in st.session_state:
     st.session_state.score = 0
 
-# -------------------------------------------------
-# PORTAL SCREEN (DROPDOWN)
-# -------------------------------------------------
-if st.session_state.selected_assessment is None:
-    st.markdown("---")
+# ---------------- PORTAL ----------------
+if st.session_state.assessment is None:
     st.subheader("Select Assessment")
 
-    choice = st.selectbox(
-        "Assessment",
-        options=[""] + list(ASSESSMENTS.keys()),
-        format_func=lambda x: ASSESSMENTS[x]["label"] if x else "-- Select --"
+    choice = st.radio(
+        label="",
+        options=list(ASSESSMENTS.keys()),
+        format_func=lambda x: ASSESSMENTS[x]
     )
 
-    if choice:
-        st.session_state.selected_assessment = choice
+    if st.button("Start Assessment"):
+        st.session_state.assessment = choice
         st.session_state.q_index = 0
         st.session_state.score = 0
         st.rerun()
 
     st.stop()
 
-# -------------------------------------------------
-# ASSESSMENT MODE
-# -------------------------------------------------
-data = ASSESSMENTS[st.session_state.selected_assessment]
-questions = data["questions"]
+# ---------------- ASSESSMENT ----------------
+assessment = st.session_state.assessment
+st.subheader(ASSESSMENTS[assessment])
 
-st.markdown("---")
-st.subheader(data["label"])
+qs = QUESTIONS.get(assessment, [])
 
-# -------------------------------------------------
-# COMPLETION
-# -------------------------------------------------
-if st.session_state.q_index >= len(questions):
-    st.success("Assessment Completed ✅")
-    st.info(f"Final Score: {st.session_state.score} / {len(questions)}")
-
-    st.markdown("---")
-    st.caption(
-        "This is an assessment preview strictly for internal purposes. "
-        "Sharing outside Medanta Hospital, Lucknow is strictly prohibited."
-    )
-
+if st.session_state.q_index >= len(qs):
+    st.success("Assessment completed")
+    st.info(f"Score: {st.session_state.score}")
     if st.button("Back to Assessment List"):
-        st.session_state.selected_assessment = None
+        st.session_state.assessment = None
         st.rerun()
-
     st.stop()
 
-# -------------------------------------------------
-# CURRENT QUESTION
-# -------------------------------------------------
-q = questions[st.session_state.q_index]
-
-st.write(f"**Question {st.session_state.q_index + 1} of {len(questions)}**")
+q = qs[st.session_state.q_index]
 
 answer = st.radio(
     q["q"],
     q["options"],
-    index=None,
     key=f"q_{st.session_state.q_index}"
 )
 
-# -------------------------------------------------
-# SUBMIT & NEXT
-# -------------------------------------------------
 if st.button("Submit & Next"):
-    if answer is None:
-        st.warning("Please select an option.")
-        st.stop()
-
     if answer == q["answer"]:
         st.session_state.score += 1
-        st.success("Correct ✅")
-    else:
-        st.error("Incorrect ❌")
-
     st.session_state.q_index += 1
     st.rerun()
-
