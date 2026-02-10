@@ -9,30 +9,20 @@ st.set_page_config(
 )
 
 # -------------------------------------------------
-# SAFE LOGO LOAD (won’t silently fail)
+# LOGO
 # -------------------------------------------------
-try:
-    st.image("mhpl_logo.png", width=180)
-except Exception:
-    st.error("⚠️ Logo file not found. Ensure mhpl_logo.png is in repo root.")
-
+st.image("mhpl_logo.png", width=180)
 st.markdown(
     "<h2 style='text-align:center;'>MEDANTA HOSPITAL LUCKNOW</h2>",
     unsafe_allow_html=True
 )
 
 # -------------------------------------------------
-# URL PARAM
-# -------------------------------------------------
-params = st.query_params
-assessment = params.get("assessment")
-
-# -------------------------------------------------
-# ASSESSMENT DATA
+# ASSESSMENT MASTER
 # -------------------------------------------------
 ASSESSMENTS = {
     "fire_safety": {
-        "title": "🔥 Fire Safety Assessment",
+        "label": "🔥 Fire Safety",
         "questions": [
             {
                 "q": "What is the first step in case of fire?",
@@ -55,34 +45,65 @@ ASSESSMENTS = {
                 "answer": "CO₂"
             }
         ]
+    },
+    "ipsg": {
+        "label": "🛡️ IPSG",
+        "questions": [
+            {
+                "q": "What does IPSG stand for?",
+                "options": [
+                    "International Patient Safety Goals",
+                    "Internal Process Safety Group",
+                    "Infection Prevention Safety Group",
+                    "Integrated Patient Service Guide"
+                ],
+                "answer": "International Patient Safety Goals"
+            }
+        ]
     }
 }
 
 # -------------------------------------------------
-# VALIDATION
+# SESSION STATE INIT
 # -------------------------------------------------
-if not assessment:
-    st.warning("No assessment selected")
-    st.stop()
+if "selected_assessment" not in st.session_state:
+    st.session_state.selected_assessment = None
 
-if assessment not in ASSESSMENTS:
-    st.error("Invalid assessment link")
-    st.stop()
-
-data = ASSESSMENTS[assessment]
-
-# -------------------------------------------------
-# SESSION STATE INIT (HARD RESET SAFE)
-# -------------------------------------------------
 if "q_index" not in st.session_state:
     st.session_state.q_index = 0
-    st.session_state.score = 0
-    st.session_state.last_answer = None
 
+if "score" not in st.session_state:
+    st.session_state.score = 0
+
+# -------------------------------------------------
+# PORTAL SCREEN (DROPDOWN)
+# -------------------------------------------------
+if st.session_state.selected_assessment is None:
+    st.markdown("---")
+    st.subheader("Select Assessment")
+
+    choice = st.selectbox(
+        "Assessment",
+        options=[""] + list(ASSESSMENTS.keys()),
+        format_func=lambda x: ASSESSMENTS[x]["label"] if x else "-- Select --"
+    )
+
+    if choice:
+        st.session_state.selected_assessment = choice
+        st.session_state.q_index = 0
+        st.session_state.score = 0
+        st.rerun()
+
+    st.stop()
+
+# -------------------------------------------------
+# ASSESSMENT MODE
+# -------------------------------------------------
+data = ASSESSMENTS[st.session_state.selected_assessment]
 questions = data["questions"]
 
-st.subheader(data["title"])
 st.markdown("---")
+st.subheader(data["label"])
 
 # -------------------------------------------------
 # COMPLETION
@@ -90,11 +111,17 @@ st.markdown("---")
 if st.session_state.q_index >= len(questions):
     st.success("Assessment Completed ✅")
     st.info(f"Final Score: {st.session_state.score} / {len(questions)}")
+
     st.markdown("---")
     st.caption(
         "This is an assessment preview strictly for internal purposes. "
         "Sharing outside Medanta Hospital, Lucknow is strictly prohibited."
     )
+
+    if st.button("Back to Assessment List"):
+        st.session_state.selected_assessment = None
+        st.rerun()
+
     st.stop()
 
 # -------------------------------------------------
@@ -108,15 +135,15 @@ answer = st.radio(
     q["q"],
     q["options"],
     index=None,
-    key=f"question_{st.session_state.q_index}"
+    key=f"q_{st.session_state.q_index}"
 )
 
 # -------------------------------------------------
-# SUBMIT LOGIC (GUARANTEED ADVANCE)
+# SUBMIT & NEXT
 # -------------------------------------------------
-if st.button("Submit & Next", key=f"submit_{st.session_state.q_index}"):
+if st.button("Submit & Next"):
     if answer is None:
-        st.warning("Please select an option before continuing.")
+        st.warning("Please select an option.")
         st.stop()
 
     if answer == q["answer"]:
@@ -125,8 +152,5 @@ if st.button("Submit & Next", key=f"submit_{st.session_state.q_index}"):
     else:
         st.error("Incorrect ❌")
 
-    # advance
     st.session_state.q_index += 1
-
-    # force clean rerun
     st.rerun()
