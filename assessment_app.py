@@ -21,6 +21,26 @@ st.markdown(
 # ASSESSMENT MASTER
 # -------------------------------------------------
 ASSESSMENTS = {
+    "hr_admin_process": {
+        "label": "📋 HR Admin Process",
+        "questions": []
+    },
+    "second_victim": {
+        "label": "🧠 Second Victim",
+        "questions": []
+    },
+    "medication_safety": {
+        "label": "💊 Medication Safety",
+        "questions": []
+    },
+    "blood_blood_product": {
+        "label": "🩸 Blood & Blood Product",
+        "questions": []
+    },
+    "basic_life_support": {
+        "label": "❤️ Basic Life Support",
+        "questions": []
+    },
     "fire_safety": {
         "label": "🔥 Fire Safety",
         "questions": [
@@ -33,33 +53,52 @@ ASSESSMENTS = {
                     "Use water on electrical fire"
                 ],
                 "answer": "Raise alarm and inform security"
-            },
-            {
-                "q": "Which extinguisher is used for electrical fires?",
-                "options": [
-                    "Water",
-                    "Foam",
-                    "CO₂",
-                    "Sand"
-                ],
-                "answer": "CO₂"
             }
         ]
     },
+    "infection_prevention": {
+        "label": "🧼 Infection Prevention",
+        "questions": []
+    },
+    "quality_training": {
+        "label": "📊 Quality Training",
+        "questions": []
+    },
     "ipsg": {
         "label": "🛡️ IPSG",
-        "questions": [
-            {
-                "q": "What does IPSG stand for?",
-                "options": [
-                    "International Patient Safety Goals",
-                    "Internal Process Safety Group",
-                    "Infection Prevention Safety Group",
-                    "Integrated Patient Service Guide"
-                ],
-                "answer": "International Patient Safety Goals"
-            }
-        ]
+        "questions": []
+    },
+    "radiation_training": {
+        "label": "☢️ Radiation Training",
+        "questions": []
+    },
+    "facility_mgmt_safety": {
+        "label": "🏥 Facility Management Safety",
+        "questions": []
+    },
+    "emergency_codes": {
+        "label": "🚨 Emergency Codes",
+        "questions": []
+    },
+    "cybersecurity_assessment": {
+        "label": "🔐 Cybersecurity",
+        "questions": []
+    },
+    "workplace_violence": {
+        "label": "⚠️ Workplace Violence",
+        "questions": []
+    },
+    "emr_training": {
+        "label": "💻 EMR Training",
+        "questions": []
+    },
+    "his_training": {
+        "label": "🖥️ HIS Training",
+        "questions": []
+    },
+    "medical_documentation": {
+        "label": "📝 Medical Documentation",
+        "questions": []
     }
 }
 
@@ -154,3 +193,4 @@ if st.button("Submit & Next"):
 
     st.session_state.q_index += 1
     st.rerun()
+
