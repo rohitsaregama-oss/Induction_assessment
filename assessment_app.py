@@ -1,95 +1,90 @@
 import streamlit as st
+import requests
 
-st.set_page_config(page_title="Medanta Induction Assessment", layout="centered")
+# ================= CONFIG =================
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo3YsafRiu6C9svDsDGRIykTqFbT2dOl_zkRwcSwSupNsGVikefoaYPV1plt3BGOkq/exec"
+LOGO_FILE = "mhpl_logo.png"
 
-# ---------------- LOGO ----------------
-st.image("mhpl_logo.png", width=180)
-st.markdown("<h2 style='text-align:center;'>MEDANTA HOSPITAL LUCKNOW</h2>", unsafe_allow_html=True)
+st.set_page_config(page_title="Medanta Assessment", layout="centered")
 
-# ---------------- MASTER ----------------
-ASSESSMENTS = {
-    "hr_admin_process": "📋 HR Admin Process",
-    "second_victim": "🧠 Second Victim",
-    "medication_safety": "💊 Medication Safety",
-    "blood_blood_product": "🩸 Blood & Blood Product",
-    "basic_life_support": "❤️ Basic Life Support",
-    "fire_safety": "🔥 Fire Safety",
-    "infection_prevention": "🧼 Infection Prevention",
-    "quality_training": "📊 Quality Training",
-    "ipsg": "🛡️ IPSG",
-    "radiation_training": "☢️ Radiation Training",
-    "facility_mgmt_safety": "🏥 Facility Management Safety",
-    "emergency_codes": "🚨 Emergency Codes",
-    "cybersecurity_assessment": "🔐 Cybersecurity",
-    "workplace_violence": "⚠️ Workplace Violence",
-    "emr_training": "💻 EMR Training",
-    "his_training": "🖥️ HIS Training",
-    "medical_documentation": "📝 Medical Documentation"
-}
+# ================= HEADER =================
+try:
+    st.image(LOGO_FILE, width=120)
+except:
+    pass
 
-QUESTIONS = {
-    "fire_safety": [
-        {
-            "q": "What is the first step in case of fire?",
-            "options": [
-                "Run immediately",
-                "Raise alarm and inform security",
-                "Ignore small fires",
-                "Use water on electrical fire"
-            ],
-            "answer": "Raise alarm and inform security"
-        }
-    ]
-}
+st.markdown("## **MEDANTA HOSPITAL LUCKNOW**")
 
-# ---------------- STATE ----------------
-if "assessment" not in st.session_state:
-    st.session_state.assessment = None
+# ================= READ URL PARAM =================
+params = st.query_params
+assessment_id = params.get("assessment", None)
+
+if not assessment_id:
+    st.warning("No assessment selected.")
+    st.stop()
+
+# ================= LOAD QUESTIONS =================
+@st.cache_data(show_spinner=False)
+def load_questions(aid):
+    r = requests.get(APPS_SCRIPT_URL, params={"assessment": aid})
+    r.raise_for_status()
+    return r.json()
+
+try:
+    questions = load_questions(assessment_id)
+except Exception as e:
+    st.error("Unable to load assessment questions.")
+    st.stop()
+
+if not questions:
+    st.warning("No active questions found for this assessment.")
+    st.stop()
+
+# ================= SESSION STATE =================
+if "q_index" not in st.session_state:
     st.session_state.q_index = 0
     st.session_state.score = 0
+    st.session_state.answers = {}
 
-# ---------------- PORTAL ----------------
-if st.session_state.assessment is None:
-    st.subheader("Select Assessment")
+q = questions[st.session_state.q_index]
 
-    choice = st.radio(
-        label="",
-        options=list(ASSESSMENTS.keys()),
-        format_func=lambda x: ASSESSMENTS[x]
-    )
+# ================= QUESTION UI =================
+st.markdown(f"### 📝 {q['Assessment_Name']}")
+st.markdown(f"**Question {st.session_state.q_index + 1} of {len(questions)}**")
+st.markdown(q["Question_Text"])
 
-    if st.button("Start Assessment"):
-        st.session_state.assessment = choice
-        st.session_state.q_index = 0
-        st.session_state.score = 0
-        st.rerun()
+options = {
+    "A": q["Option_A"],
+    "B": q["Option_B"],
+    "C": q["Option_C"],
+    "D": q["Option_D"]
+}
 
-    st.stop()
-
-# ---------------- ASSESSMENT ----------------
-assessment = st.session_state.assessment
-st.subheader(ASSESSMENTS[assessment])
-
-qs = QUESTIONS.get(assessment, [])
-
-if st.session_state.q_index >= len(qs):
-    st.success("Assessment completed")
-    st.info(f"Score: {st.session_state.score}")
-    if st.button("Back to Assessment List"):
-        st.session_state.assessment = None
-        st.rerun()
-    st.stop()
-
-q = qs[st.session_state.q_index]
-
-answer = st.radio(
-    q["q"],
-    q["options"],
+choice = st.radio(
+    "Select your answer",
+    options.keys(),
+    format_func=lambda x: f"{x}. {options[x]}",
     key=f"q_{st.session_state.q_index}"
 )
 
-if st.button("Submit & Next"):
-    if answer == q["answer"]:
-        st.session_state.score += 1
-    st.session_state.q_index += 1
-    st.rerun()
+# ================= NAVIGATION =================
+col1, col2 = st.columns(2)
+
+with col2:
+    if st.button("Next"):
+        st.session_state.answers[q["Question_ID"]] = choice
+        if choice == q["Correct_Option"]:
+            st.session_state.score += 1
+
+        if st.session_state.q_index + 1 < len(questions):
+            st.session_state.q_index += 1
+            st.rerun()
+        else:
+            st.session_state.q_index = "done"
+            st.rerun()
+
+# ================= RESULT =================
+if st.session_state.q_index == "done":
+    st.success("Assessment completed")
+    st.info(f"Score: {st.session_state.score} / {len(questions)}")
+    st.stop()
