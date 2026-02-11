@@ -6,7 +6,7 @@ import requests
 # ===============================
 st.set_page_config(page_title="Medanta Assessment", layout="centered")
 
-APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzo3YsafRiu6C9svDsDGRIykTqFbT2dOl_zkRwcSwSupNsGVikefoaYPV1plt3BGOkq/exec"
+APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwD5s2i-fNkMEEgzFr8laI95kzIziuNfqVDSOYo7P6Wlvg4rk570Tp2lxc3mkOCT9JI/exec"
 
 # ===============================
 # READ QUERY PARAM (UPDATED API)
@@ -85,3 +85,4 @@ if st.button("Next"):
         st.session_state.score += 1
     st.session_state.q_index += 1
     st.rerun()
+
